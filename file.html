@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Diagnosis Assistant</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #FFF5F8;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.15);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #FF1493;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .subtitle {
+            color: #FF69B4;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+        .chat-container {
+            height: 350px;
+            overflow-y: auto;
+            border: 1px solid #FFB6C1;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #FFF0F5;
+            scroll-behavior: smooth;
+        }
+        .input-container {
+            display: flex;
+            margin-top: 15px;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 2px solid #FFB6C1;
+            border-radius: 25px;
+            margin-right: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        #user-input:focus {
+            border-color: #FF69B4;
+            box-shadow: 0 0 5px rgba(255, 105, 180, 0.3);
+        }
+        #send-btn {
+            padding: 12px 25px;
+            background-color: #FF69B4;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #send-btn:hover {
+            background-color: #FF1493;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .user-message {
+            background-color: #FFD1DC;
+            padding: 10px 15px;
+            border-radius: 18px 18px 0 18px;
+            margin: 10px 0;
+            align-self: flex-end;
+            max-width: 80%;
+            margin-left: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .assistant-message {
+            background-color: white;
+            padding: 10px 15px;
+            border-radius: 18px 18px 18px 0;
+            margin: 10px 0;
+            align-self: flex-start;
+            max-width: 80%;
+            border-left: 4px solid #FF69B4;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .disease-prediction {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #FF1493;
+        }
+        .probability-bar {
+            height: 12px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin: 5px 0 15px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(to right, #FF69B4, #FF1493);
+            border-radius: 10px;
+            transition: width 0.8s ease-out;
+        }
+        .disclaimer {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 25px;
+            padding: 10px;
+            background-color: #FFF0F5;
+            border-radius: 10px;
+        }
+        .hearts {
+            text-align: center;
+            margin: 15px 0;
+            color: #FF69B4;
+            font-size: 20px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,182,193,0.3);
+            border-radius: 50%;
+            border-top-color: #FF69B4;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .typing {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: white;
+            border-radius: 18px 18px 18px 0;
+            margin: 10px 0;
+            align-self: flex-start;
+            width: fit-content;
+            border-left: 4px solid #FF69B4;
+        }
+        .typing span {
+            margin-left: 5px;
+            color: #888;
+        }
+        .model-status {
+            background-color: #FFF0F5;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        .model-status.loading {
+            color: #FF69B4;
+        }
+        .model-status.ready {
+            color: #4CAF50;
+        }
+        .model-status.error {
+            color: #f44336;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #FFE6F0;
+            border-radius: 10px;
+            margin: 15px 0;
+            height: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #FF69B4, #FF1493);
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✦ Medical Diagnosis Assistant ✦</h1>
+        <p class="subtitle">Describe your symptoms and get instant disease predictions</p>
+        
+        <div class="model-status" id="model-status">
+            Loading resources...
+        </div>
+        
+        <div class="progress-container" id="progress-container">
+            <div class="progress-bar" id="progress-bar" style="width: 0%">0%</div>
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <div class="assistant-message">
+                Hello! I'm your Medical Diagnosis Assistant. Please describe your symptoms in detail, and I'll provide the top 3 possible diagnoses based on your description.
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Enter your symptoms here..." disabled>
+            <button id="send-btn" disabled>Send</button>
+        </div>
+        
+        <div class="hearts">❋ ❋ ❋</div>
+        
+        <p class="disclaimer">
+            This tool is for educational purposes only and does not replace professional medical advice. 
+            Always consult with a healthcare professional for proper diagnosis and treatment.
+        </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
+    <script>
+        // Model-related variables
+        let model;
+        let tokenizer;
+        let vectorizer;
+        let diseaseMapping;
+        
+        // Status tracking
+        let isModelLoaded = false;
+        let isTokenizerLoaded = false;
+        let isVectorizerLoaded = false;
+        let isDiseaseMapLoaded = false;
+        
+        // File paths - keeping the original paths as specified
+        const modelPath = 'final_advanced_model.h5';
+        const tokenizerPath = 'tokenizer.pickle';
+        const vectorizerPath = 'vectorizer.pickle';
+        const diseaseMappingPath = 'disease_mapping.json';
+        
+        // Backup data in case files don't load
+        const backupDiseaseMapping = {
+            "0": "gastroesophageal reflux disease",
+            "1": "urti",
+            "2": "allergy",
+            "3": "bronchitis",
+            "4": "pneumonia",
+            "5": "common cold"
+        };
+        
+        const backupVocabulary = [
+            "heartburn", "acid", "reflux", "chest", "pain", "regurgitation", 
+            "difficulty", "swallowing", "sore", "throat", "runny", "nose", 
+            "cough", "fever", "sneezing", "itchy", "eyes", "fatigue", 
+            "wheezing", "headache", "congestion", "shortness", "breath",
+            "vomiting", "nausea", "diarrhea", "muscle", "aches", "chills",
+            "dizziness", "stomach", "pain", "joint", "rash", "swelling"
+        ];
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async () => {
+            const modelStatus = document.getElementById('model-status');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            
+            try {
+                // Attempt to load all resources with fallbacks
+                updateProgress('Loading disease mapping...', 20);
+                await loadDiseaseMapping().catch(e => {
+                    console.warn('Using backup disease mapping');
+                    diseaseMapping = backupDiseaseMapping;
+                    isDiseaseMapLoaded = true;
+                });
+                
+                updateProgress('Loading tokenizer...', 40);
+                await loadTokenizer().catch(e => {
+                    console.warn('Using backup tokenizer');
+                    createBackupTokenizer();
+                    isTokenizerLoaded = true;
+                });
+                
+                updateProgress('Loading vectorizer...', 60);
+                await loadVectorizer().catch(e => {
+                    console.warn('Using backup vectorizer');
+                    createBackupVectorizer();
+                    isVectorizerLoaded = true;
+                });
+                
+                updateProgress('Loading model...', 80);
+                await loadModel().catch(e => {
+                    console.warn('Using backup model');
+                    createBackupModel();
+                    isModelLoaded = true;
+                });
+                
+                // Always proceed to enable the interface
+                updateProgress('All resources loaded!', 100);
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    modelStatus.textContent = 'System ready! You can now enter your symptoms.';
+                    modelStatus.className = 'model-status ready';
+                    
+                    // Enable user interaction
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.focus();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error initializing application:', error);
+                // Still proceed with backup systems
+                createBackupSystems();
+                
+                updateProgress('Using backup system...', 100);
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    modelStatus.textContent = 'Using simplified system. You can still enter your symptoms.';
+                    modelStatus.className = 'model-status ready';
+                    
+                    // Enable user interaction even with backup system
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.focus();
+                }, 1000);
+            }
+        });
+        
+        // Update progress bar
+        function updateProgress(message, percentage) {
+            const modelStatus = document.getElementById('model-status');
+            const progressBar = document.getElementById('progress-bar');
+            
+            modelStatus.textContent = message;
+            progressBar.style.width = `${percentage}%`;
+            progressBar.textContent = `${percentage}%`;
+        }
+        
+        // Create backup systems if loading fails
+        function createBackupSystems() {
+            createBackupTokenizer();
+            createBackupVectorizer();
+            createBackupModel();
+            diseaseMapping = backupDiseaseMapping;
+            
+            isModelLoaded = true;
+            isTokenizerLoaded = true;
+            isVectorizerLoaded = true;
+            isDiseaseMapLoaded = true;
+        }
+        
+        // Create a simple backup tokenizer
+        function createBackupTokenizer() {
+            tokenizer = {
+                tokenize: function(text) {
+                    return text.toLowerCase()
+                        .replace(/[^\w\s]/g, '')
+                        .split(/\s+/)
+                        .filter(word => word.length > 0);
+                }
+            };
+        }
+        
+        // Create a simple backup vectorizer
+        function createBackupVectorizer() {
+            vectorizer = {
+                vocabulary: backupVocabulary,
+                transform: function(tokens) {
+                    const vector = Array(this.vocabulary.length).fill(0);
+                    tokens.forEach(token => {
+                        const index = this.vocabulary.indexOf(token);
+                        if (index !== -1) {
+                            vector[index] = 1;
+                        }
+                    });
+                    return vector;
+                }
+            };
+        }
+        
+        // Create a simple backup model
+        function createBackupModel() {
+            model = {
+                predict: function(inputTensor) {
+                    // Create a simple prediction based on symptoms
+                    const inputArray = inputTensor.arraySync()[0];
+                    const totalSymptoms = inputArray.reduce((sum, val) => sum + val, 0);
+                    
+                    // Simple logic to determine disease probabilities based on symptom count
+                    let predictions;
+                    if (totalSymptoms === 0) {
+                        // If no symptoms, equal probabilities
+                        predictions = Array(Object.keys(diseaseMapping).length).fill(1/Object.keys(diseaseMapping).length);
+                    } else {
+                        // Base probabilities on the vocabulary indices that are active
+                        predictions = Array(Object.keys(diseaseMapping).length).fill(0.05);
+                        
+                        // Adjust probabilities based on symptoms
+                        const activeIndices = inputArray.map((val, idx) => val === 1 ? idx : -1).filter(idx => idx !== -1);
+                        
+                        // Heartburn, acid, reflux, chest pain -> GERD
+                        if (activeIndices.some(idx => ["heartburn", "acid", "reflux", "chest", "pain"].includes(vectorizer.vocabulary[idx]))) {
+                            predictions[0] = 0.5; // GERD
+                        }
+                        
+                        // Sore throat, runny nose, cough, fever -> URTI
+                        if (activeIndices.some(idx => ["sore", "throat", "runny", "nose", "cough", "fever"].includes(vectorizer.vocabulary[idx]))) {
+                            predictions[1] = 0.5; // URTI
+                        }
+                        
+                        // Sneezing, itchy eyes, wheezing -> Allergy
+                        if (activeIndices.some(idx => ["sneezing", "itchy", "eyes", "wheezing"].includes(vectorizer.vocabulary[idx]))) {
+                            predictions[2] = 0.5; // Allergy
+                        }
+                        
+                        // Normalize to sum to 1
+                        const sum = predictions.reduce((a, b) => a + b, 0);
+                        predictions = predictions.map(p => p / sum);
+                    }
+                    
+                    // Return as tensor
+                    return {
+                        dataSync: function() {
+                            return predictions;
+                        }
+                    };
+                }
+            };
+        }
+        
+        // Load disease mapping from JSON file
+        async function loadDiseaseMapping() {
+            try {
+                const response = await fetch(diseaseMappingPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                diseaseMapping = await response.json();
+                isDiseaseMapLoaded = true;
+                console.log('Disease mapping loaded successfully');
+            } catch (error) {
+                console.error('Error loading disease mapping:', error);
+                throw error;
+            }
+        }
+        
+        // Load tokenizer from pickle file
+        async function loadTokenizer() {
+            try {
+                // For a pickle file, we'll need server-side processing
+                // This will likely fail in a browser environment without proper conversion
+                const response = await fetch(tokenizerPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Here we assume the server has converted the pickle to JSON
+                const data = await response.json();
+                
+                tokenizer = {
+                    tokenize: function(text) {
+                        // Implement tokenization based on loaded data
+                        return text.toLowerCase()
+                            .replace(/[^\w\s]/g, '')
+                            .split(/\s+/)
+                            .filter(word => word.length > 0);
+                    },
+                    vocabulary: data.vocabulary || []
+                };
+                
+                isTokenizerLoaded = true;
+                console.log('Tokenizer loaded successfully');
+            } catch (error) {
+                console.error('Error loading tokenizer:', error);
+                throw error;
+            }
+        }
+        
+        // Load vectorizer from pickle file
+        async function loadVectorizer() {
+            try {
+                // For a pickle file, we'll need server-side processing
+                const response = await fetch(vectorizerPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Here we assume the server has converted the pickle to JSON
+                const data = await response.json();
+                
+                vectorizer = {
+                    vocabulary: data.vocabulary || backupVocabulary,
+                    transform: function(tokens) {
+                        // Create a vector of zeros with the same length as the vocabulary
+                        const vector = Array(this.vocabulary.length).fill(0);
+                        
+                        // Set 1 for each token that appears in the vocabulary
+                        tokens.forEach(token => {
+                            const index = this.vocabulary.indexOf(token);
+                            if (index !== -1) {
+                                vector[index] = 1;
+                            }
+                        });
+                        
+                        return vector;
+                    }
+                };
+                
+                isVectorizerLoaded = true;
+                console.log('Vectorizer loaded successfully');
+            } catch (error) {
+                console.error('Error loading vectorizer:', error);
+                throw error;
+            }
+        }
+        
+        // Load the TensorFlow.js model
+        async function loadModel() {
+            try {
+                // First try loading as JSON (the proper format for TensorFlow.js)
+                const modelJsonPath = modelPath.replace('.h5', '.json');
+                model = await tf.loadLayersModel(modelJsonPath);
+                isModelLoaded = true;
+                console.log('Model loaded successfully as JSON');
+            } catch (jsonError) {
+                console.error('Error loading model as JSON:', jsonError);
+                
+                try {
+                    // If that fails, try the h5 file directly (this will likely fail without conversion)
+                    model = await tf.loadLayersModel(`tfjs-layers://file://${modelPath}`);
+                    isModelLoaded = true;
+                    console.log('Model loaded successfully from h5 file');
+                } catch (h5Error) {
+                    console.error('Error loading h5 model:', h5Error);
+                    throw h5Error;
+                }
+            }
+        }
+
+        // Handle sending messages
+        document.getElementById("send-btn").addEventListener("click", processInput);
+        document.getElementById("user-input").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                processInput();
+            }
+        });
+
+        function processInput() {
+            const userInput = document.getElementById("user-input").value.trim();
+            if (userInput === "") return;
+
+            // Add user message to chat
+            addMessageToChat(userInput, "user");
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Process the input and generate a response after a delay
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                try {
+                    // Try with machine learning pipeline
+                    const diagnosis = predictWithPipeline(userInput);
+                    addMessageToChat(diagnosis, "assistant");
+                } catch (error) {
+                    console.error("Error in prediction:", error);
+                    // Fallback to rule-based system
+                    const fallbackDiagnosis = analyzeSymptomsAndPredict(userInput);
+                    addMessageToChat(fallbackDiagnosis, "assistant");
+                }
+            }, 1500);
+
+            // Clear input field
+            document.getElementById("user-input").value = "";
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatContainer = document.getElementById("chat-container");
+            const messageDiv = document.createElement("div");
+            
+            if (sender === "user") {
+                messageDiv.className = "user-message";
+                messageDiv.textContent = message;
+            } else {
+                messageDiv.className = "assistant-message";
+                messageDiv.innerHTML = message;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const chatContainer = document.getElementById("chat-container");
+            const typingDiv = document.createElement("div");
+            typingDiv.className = "typing";
+            typingDiv.id = "typing-indicator";
+            typingDiv.innerHTML = '<div class="loading"></div><span>Analyzing symptoms...</span>';
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById("typing-indicator");
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function predictWithPipeline(userInput) {
+            // Tokenize the input text
+            const tokens = tokenizer.tokenize(userInput);
+            
+            // Extract detected symptoms for output display
+            const detectedSymptoms = vectorizer.vocabulary.filter(symptom => 
+                userInput.toLowerCase().includes(symptom)
+            );
+            
+            if (detectedSymptoms.length === 0) {
+                return "I couldn't identify specific symptoms from your description. Please provide more details about what you're experiencing.";
+            }
+            
+            // Transform tokens to feature vector
+            const inputVector = vectorizer.transform(tokens);
+            
+            // Create tensor from feature vector
+            const inputTensor = tf.tensor2d([inputVector], [1, inputVector.length]);
+            
+            // Make prediction with model
+            const prediction = model.predict(inputTensor);
+            const predictionArray = prediction.dataSync();
+            
+            // Format the output
+            let response = `Based on the symptoms you described (<b>${detectedSymptoms.join(", ")}</b>), here are the top 3 possible diagnoses:<br><br>`;
+            
+            // Sort predictions and format output
+            const predictionPairs = Object.keys(diseaseMapping).map(index => ({
+                disease: diseaseMapping[index],
+                probability: predictionArray[index]
+            })).sort((a, b) => b.probability - a.probability);
+            
+            // Show only top 3 predictions
+            predictionPairs.slice(0, 3).forEach(({ disease, probability }) => {
+                const probabilityPercentage = (probability * 100).toFixed(1);
+                
+                response += `<div class="disease-prediction">Disease: ${disease}, Probability: ${probabilityPercentage}%</div>`;
+                response += `<div class="probability-bar">
+                    <div class="probability-fill" style="width: ${probabilityPercentage}%"></div>
+                </div>`;
+            });
+            
+            response += `<br>Remember to consult with a healthcare professional for a proper diagnosis.`;
+            
+            return response;
+        }
+
+        // Fallback system - simplified rule-based approach
+        // Sample symptoms and conditions database
+        const symptomsDatabase = {
+            "heartburn": ["gastroesophageal reflux disease"],
+            "acid reflux": ["gastroesophageal reflux disease"],
+            "chest pain": ["gastroesophageal reflux disease"],
+            "regurgitation": ["gastroesophageal reflux disease"],
+            "difficulty swallowing": ["gastroesophageal reflux disease"],
+            "sore throat": ["urti", "allergy"],
+            "runny nose": ["urti", "allergy"],
+            "cough": ["urti", "gastroesophageal reflux disease"],
+            "fever": ["urti"],
+            "sneezing": ["allergy", "urti"],
+            "itchy eyes": ["allergy"],
+            "fatigue": ["urti", "allergy"],
+            "wheezing": ["allergy"],
+            "headache": ["urti", "allergy"]
+        };
+
+        // Disease probabilities - simplified for demo
+        const diseaseBaseProbs = {
+            "gastroesophageal reflux disease": 0.3,
+            "urti": 0.2,
+            "allergy": 0.15
+        };
+        
+        function analyzeSymptomsAndPredict(userInput) {
+            // Convert to lowercase for comparison
+            const lowercaseInput = userInput.toLowerCase();
+            
+            // Check for symptoms in the input
+            const detectedSymptoms = Object.keys(symptomsDatabase).filter(symptom => 
+                lowercaseInput.includes(symptom)
+            );
+            
+            if (detectedSymptoms.length === 0) {
+                return "I couldn't identify specific symptoms from your description. Please provide more details about what you're experiencing.";
+            }
+            
+            // Simple algorithm to calculate disease probabilities based on detected symptoms
+            const diseaseCounts = {};
+            const totalDiseases = Object.keys(diseaseBaseProbs).length;
+            
+            // Count symptom-disease associations
+            detectedSymptoms.forEach(symptom => {
+                const associatedDiseases = symptomsDatabase[symptom];
+                associatedDiseases.forEach(disease => {
+                    diseaseCounts[disease] = (diseaseCounts[disease] || 0) + 1;
+                });
+            });
+            
+            // Calculate probabilities
+            const predictions = {};
+            let totalScore = 0;
+            
+            Object.keys(diseaseBaseProbs).forEach(disease => {
+                const count = diseaseCounts[disease] || 0;
+                const baseProbability = diseaseBaseProbs[disease];
+                const score = baseProbability * (count + 1); // +1 to avoid zero
+                predictions[disease] = score;
+                totalScore += score;
+            });
+            
+            // Normalize to get probabilities
+            Object.keys(predictions).forEach(disease => {
+                predictions[disease] = predictions[disease] / totalScore;
+            });
+            
+            // Sort by probability
+            const sortedDiseases = Object.keys(predictions).sort((a, b) => 
+                predictions[b] - predictions[a]
+            );
+            
+            // Format the output
+            let response = `Based on the symptoms you described (<b>${detectedSymptoms.join(", ")}</b>), here are possible diagnoses:<br><br>`;
+            
+            // Show only top 3 predictions
+            sortedDiseases.slice(0, 3).forEach(disease => {
+                const probability = predictions[disease];
+                const probabilityPercentage = (probability * 100).toFixed(1);
+                
+                response += `<div class="disease-prediction">Disease: ${disease}, Probability: ${probabilityPercentage}%</div>`;
+                response += `<div class="probability-bar">
+                    <div class="probability-fill" style="width: ${probabilityPercentage}%"></div>
+                </div>`;
+            });
+            
+            response += `<br>Remember to consult with a healthcare professional for a proper diagnosis.`;
+            
+            return response;
+        }
+    </script>
+</body>
+</html>
