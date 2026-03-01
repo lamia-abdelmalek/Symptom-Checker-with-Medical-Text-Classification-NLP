@@ -147,6 +147,3 @@ Supervised by Dr. Rabab Bousmaha
 ## ⚠️ Disclaimer
 
 This project is for educational purposes only and does not replace professional medical advice.
-
-* ✅ A more GitHub-polished version (with badges & visuals)
-* ✅ A Streamlit Cloud deployment guide step-by-step 🚀
